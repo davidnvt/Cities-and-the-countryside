@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City & Countryside Vocabulary Game</title>
+<style>
+  :root{
+    --card: rgba(255,255,255,.06);
+    --card-hover: rgba(255,255,255,.11);
+    --stroke: rgba(255,255,255,.13);
+    --text:#e9edf9;
+    --muted:#98a3c2;
+    --accent:#7c5cff;
+    --accent2:#22d3ee;
+    --good:#22c55e;
+    --bad:#ef4444;
+    --warn:#f59e0b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(1000px 620px at 8% -12%, #312e81 0%, transparent 62%),
+      radial-gradient(900px 520px at 102% -4%, #0e7490 0%, transparent 58%),
+      linear-gradient(165deg,#070b18 0%, #0c1123 55%, #090e20 100%);
+    background-attachment:fixed;
+    color:var(--text);
+    min-height:100vh;
+    display:flex; justify-content:center; align-items:flex-start;
+    padding:26px 14px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{width:100%; max-width:760px}
+  .screen{display:none}
+  .screen.active{display:block; animation:fade .35s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+
+  /* ---------- START ---------- */
+  h1{
+    font-size:clamp(24px,5vw,34px);
+    line-height:1.2;
+    text-align:center;
+    letter-spacing:-.5px;
+    background:linear-gradient(92deg,#a78bfa,#22d3ee 60%,#67e8f9);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{text-align:center; color:var(--muted); margin:10px auto 22px; font-size:14.5px; max-width:560px; line-height:1.55}
+  .sub b{color:#a5b4fc}
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--stroke);
+    border-radius:18px;
+    padding:16px 16px 18px;
+    margin-bottom:14px;
+    backdrop-filter: blur(10px);
+  }
+  .panel h3{
+    font-size:12px; text-transform:uppercase; letter-spacing:1.4px;
+    color:var(--muted); font-weight:700; margin-bottom:12px;
+  }
+  .chips{display:flex; flex-wrap:wrap; gap:9px}
+  .chip{
+    font:inherit; font-size:13.5px; font-weight:600;
+    color:var(--muted);
+    background:rgba(255,255,255,.045);
+    border:1px solid var(--stroke);
+    border-radius:999px;
+    padding:9px 15px;
+    cursor:pointer;
+    transition:.18s;
+    user-select:none;
+  }
+  .chip:hover{background:var(--card-hover); color:var(--text); transform:translateY(-1px)}
+  .chip.active{
+    background:linear-gradient(135deg, rgba(124,92,255,.9), rgba(34,211,238,.75));
+    color:#fff; border-color:transparent;
+    box-shadow:0 6px 20px -6px rgba(124,92,255,.75);
+  }
+  /* Theme chips riêng style */
+  #themeChips .chip{font-size:14px; padding:10px 17px}
+  #themeChips .chip[data-theme="city"].active{
+    background:linear-gradient(135deg,#7c5cff,#4f46e5);
+    box-shadow:0 6px 20px -6px rgba(124,92,255,.9);
+  }
+  #themeChips .chip[data-theme="countryside"].active{
+    background:linear-gradient(135deg,#10b981,#65a30d);
+    box-shadow:0 6px 20px -6px rgba(16,185,129,.85);
+  }
+  #themeChips .chip[data-theme="all"].active{
+    background:linear-gradient(135deg,#7c5cff,#10b981);
+    box-shadow:0 6px 20px -6px rgba(124,92,255,.9);
+  }
+  .link-btn{
+    background:none; border:none; color:var(--accent2);
+    font:inherit; font-size:12.5px; margin-top:12px; cursor:pointer;
+    text-decoration:underline; text-underline-offset:3px; opacity:.85;
+  }
+  .link-btn:hover{opacity:1}
+
+  .btn-primary{
+    width:100%; font:inherit; font-size:17px; font-weight:800;
+    color:#fff; letter-spacing:.3px;
+    background:linear-gradient(135deg,#7c5cff,#4f46e5 45%, #0891b2);
+    border:none; border-radius:16px;
+    padding:17px 20px; cursor:pointer;
+    box-shadow:0 14px 34px -12px rgba(124,92,255,.9);
+    transition:.18s;
+  }
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 20px 42px -12px rgba(124,92,255,1)}
+  .btn-primary:active{transform:translateY(0)}
+
+  /* ---------- GAME ---------- */
+  .hud{
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:12px;
+  }
+  .hud-item{
+    flex:1;
+    background:var(--card); border:1px solid var(--stroke);
+    border-radius:14px; padding:8px 10px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    backdrop-filter: blur(8px);
+  }
+  .hud-label{font-size:10.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); font-weight:700}
+  .hud-item span:last-child{font-size:17px; font-weight:800}
+  .icon-btn{
+    background:var(--card); border:1px solid var(--stroke); color:var(--text);
+    width:46px; height:46px; border-radius:14px; font-size:18px; cursor:pointer;
+    transition:.18s;
+    display:grid; place-items:center;
+    flex:0 0 auto;
+  }
+  .icon-btn:hover{background:var(--card-hover)}
+  .icon-btn.back-btn:hover{background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.5)}
+
+  .progress{
+    height:7px; background:rgba(255,255,255,.08);
+    border-radius:999px; overflow:hidden; margin-bottom:8px;
+  }
+  .progress-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg,#7c5cff,#22d3ee);
+    border-radius:999px; transition:width .35s ease;
+  }
+  .timerbar{
+    height:4px; background:rgba(255,255,255,.06);
+    border-radius:999px; overflow:hidden; margin-bottom:20px;
+  }
+  .timer-fill{
+    height:100%; width:100%;
+    background:linear-gradient(90deg,#22d3ee,#7c5cff);
+    border-radius:999px;
+    transition:width .1s linear, background .3s;
+  }
+  .timer-fill.low{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+
+  .qcard{
+    position:relative;
+    background:linear-gradient(160deg, rgba(124,92,255,.16), rgba(34,211,238,.07));
+    border:1px solid rgba(124,92,255,.32);
+    border-radius:22px;
+    padding:26px 22px 24px;
+    text-align:center;
+    margin-bottom:18px;
+    box-shadow:0 22px 50px -26px rgba(124,92,255,.9);
+    transition:.3s;
+  }
+  .qcard.theme-countryside{
+    background:linear-gradient(160deg, rgba(16,185,129,.18), rgba(132,204,22,.07));
+    border-color:rgba(16,185,129,.35);
+    box-shadow:0 22px 50px -26px rgba(16,185,129,.9);
+  }
+  .qlabel{font-size:12px; letter-spacing:1.3px; text-transform:uppercase; color:#b9a9ff; font-weight:700; margin-bottom:12px}
+  .qcard.theme-countryside .qlabel{color:#86efac}
+  .qtext{
+    font-size:clamp(21px,4.4vw,29px); font-weight:800; line-height:1.3;
+    word-break:break-word;
+  }
+  .qtopic{
+    display:inline-block; margin-top:14px;
+    font-size:12px; font-weight:700; color:var(--muted);
+    background:rgba(255,255,255,.06);
+    border:1px solid var(--stroke);
+    padding:5px 12px; border-radius:999px;
+  }
+
+  .answers{display:grid; grid-template-columns:1fr; gap:11px}
+  .answer{
+    display:flex; align-items:center; gap:13px;
+    font:inherit; font-size:15.5px; font-weight:600; text-align:left;
+    color:var(--text);
+    background:var(--card);
+    border:1.5px solid var(--stroke);
+    border-radius:16px;
+    padding:15px 16px;
+    cursor:pointer;
+    transition:.16s;
+    width:100%;
+  }
+  .answer .key{
+    flex:0 0 30px; height:30px;
+    display:grid; place-items:center;
+    border-radius:9px;
+    background:rgba(255,255,255,.08);
+    border:1px solid var(--stroke);
+    font-size:13px; font-weight:800; color:var(--muted);
+    transition:.16s;
+  }
+  .answer:hover:not(:disabled){background:var(--card-hover); border-color:rgba(124,92,255,.6); transform:translateX(4px)}
+  .answer:disabled{cursor:default}
+  .answer.correct{
+    background:rgba(34,197,94,.16); border-color:var(--good);
+    box-shadow:0 0 0 3px rgba(34,197,94,.14);
+    animation:pop .3s ease;
+  }
+  .answer.correct .key{background:var(--good); color:#04250f; border-color:transparent}
+  .answer.wrong{
+    background:rgba(239,68,68,.15); border-color:var(--bad);
+    animation:shake .38s ease;
+  }
+  .answer.wrong .key{background:var(--bad); color:#fff; border-color:transparent}
+  .answer.dim{opacity:.42}
+  @keyframes pop{0%{transform:scale(.97)} 55%{transform:scale(1.02)} 100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 45%{transform:translateX(6px)} 70%{transform:translateX(-3px)}}
+
+  .feedback{margin-top:16px}
+  .fb-inner{
+    background:var(--card); border:1px solid var(--stroke);
+    border-radius:18px; padding:16px 18px;
+    animation:fade .28s ease;
+  }
+  .fb-title{font-size:16px; font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .fb-title.ok{color:#6ee7a5}
+  .fb-title.no{color:#fca5a5}
+  .pts{
+    font-size:13px; font-weight:800; color:#04250f;
+    background:linear-gradient(135deg,#86efac,#22d3ee);
+    padding:3px 10px; border-radius:999px;
+  }
+  .fb-answer{font-size:14.5px; line-height:1.6; color:#d7def5}
+  .fb-answer b{color:#fff}
+  .fb-ex{
+    margin-top:9px; font-size:13.5px; font-style:italic; color:var(--muted);
+    border-left:3px solid rgba(124,92,255,.6); padding-left:11px; line-height:1.55;
+  }
+  .btn-next{
+    margin-top:14px; width:100%;
+    font:inherit; font-size:15px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,#7c5cff,#4f46e5);
+    border:none; border-radius:13px; padding:13px;
+    cursor:pointer; transition:.18s;
+  }
+  .btn-next:hover{transform:translateY(-2px); box-shadow:0 12px 26px -12px rgba(124,92,255,1)}
+
+  /* ---------- END ---------- */
+  .trophy{font-size:60px; text-align:center; margin-bottom:6px; animation:pop .5s ease}
+  .end-title{text-align:center; font-size:26px; font-weight:800; margin-bottom:20px}
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-bottom:18px}
+  .stat{
+    background:var(--card); border:1px solid var(--stroke);
+    border-radius:16px; padding:15px 8px; text-align:center;
+  }
+  .stat .v{font-size:23px; font-weight:800; background:linear-gradient(135deg,#a78bfa,#22d3ee); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .stat .l{font-size:11px; text-transform:uppercase; letter-spacing:1.1px; color:var(--muted); font-weight:700; margin-top:4px}
+  .review{
+    background:var(--card); border:1px solid var(--stroke);
+    border-radius:18px; padding:15px 17px; margin-bottom:18px;
+    max-height:270px; overflow-y:auto;
+  }
+  .review h4{font-size:12px; text-transform:uppercase; letter-spacing:1.3px; color:var(--muted); margin-bottom:11px}
+  .review-item{padding:9px 0; border-bottom:1px dashed rgba(255,255,255,.09); font-size:14px; line-height:1.5}
+  .review-item:last-child{border-bottom:none}
+  .review-item .en{color:#a5b4fc; font-weight:700}
+  .review-item .vi{color:#e9edf9}
+  .row{display:flex; gap:11px}
+  .row .btn-primary{flex:2}
+  .btn-ghost{
+    flex:1; font:inherit; font-size:15px; font-weight:700; color:var(--text);
+    background:var(--card); border:1px solid var(--stroke);
+    border-radius:16px; padding:17px 14px; cursor:pointer; transition:.18s;
+  }
+  .btn-ghost:hover{background:var(--card-hover)}
+  .review::-webkit-scrollbar{width:7px}
+  .review::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16); border-radius:99px}
+
+  /* ---------- CONFIRM MODAL ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:999;
+    background:rgba(4,7,18,.78);
+    backdrop-filter: blur(6px);
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.show{display:flex; animation:fade .22s ease}
+  .modal{
+    background:linear-gradient(160deg, #151a30, #0e1226);
+    border:1px solid var(--stroke);
+    border-radius:20px;
+    padding:24px 22px 20px;
+    max-width:380px; width:100%;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
+    animation:pop .28s ease;
+  }
+  .modal-icon{font-size:42px; text-align:center; margin-bottom:8px}
+  .modal h3{font-size:19px; font-weight:800; text-align:center; margin-bottom:8px}
+  .modal p{font-size:14px; color:var(--muted); text-align:center; line-height:1.55; margin-bottom:20px}
+  .modal-actions{display:flex; gap:10px}
+  .modal-actions button{
+    flex:1; font:inherit; font-size:14.5px; font-weight:700;
+    border-radius:13px; padding:13px; cursor:pointer; transition:.18s;
+  }
+  .btn-cancel{
+    background:var(--card); border:1px solid var(--stroke); color:var(--text);
+  }
+  .btn-cancel:hover{background:var(--card-hover)}
+  .btn-confirm{
+    background:linear-gradient(135deg,#ef4444,#b91c1c); border:none; color:#fff;
+  }
+  .btn-confirm:hover{transform:translateY(-1px); box-shadow:0 12px 26px -12px rgba(239,68,68,.9)}
+
+  @media (max-width:520px){
+    .hud-item span:last-child{font-size:15px}
+    .stats{grid-template-columns:repeat(3,1fr)}
+    .stat .v{font-size:19px}
+    .answer{font-size:14.5px; padding:13px 14px}
+    .qcard{padding:22px 16px}
+    .icon-btn{width:42px; height:42px; font-size:16px}
+    #themeChips .chip{font-size:13px; padding:9px 13px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ START ============ -->
+  <section class="screen active" id="screen-start">
+    <h1>🏙️ City &amp; 🌾 Countryside</h1>
+    <p class="sub">Học <b>92 từ vựng</b> &amp; cụm từ về cuộc sống <b>thành phố</b> (Giáo dục, Ẩm thực, Văn hóa, Cơ sở vật chất, Nhược điểm) và <b>nông thôn</b> (Phong cảnh, Cuộc sống, Nông nghiệp, Ưu điểm, Nhược điểm).</p>
+
+    <div class="panel">
+      <h3>🎯 Chủ đề chính</h3>
+      <div class="chips" id="themeChips">
+        <button class="chip active" data-theme="all">🌍 Cả hai</button>
+        <button class="chip" data-theme="city">🏙️ Thành phố</button>
+        <button class="chip" data-theme="countryside">🌾 Nông thôn</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Chế độ chơi</h3>
+      <div class="chips" id="dirChips">
+        <button class="chip active" data-dir="mix">🔀 Trộn cả hai</button>
+        <button class="chip" data-dir="en2vi">🇬🇧 → 🇻🇳 Anh → Việt</button>
+        <button class="chip" data-dir="vi2en">🇻🇳 → 🇬🇧 Việt → Anh</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Chủ đề con</h3>
+      <div class="chips" id="topicChips"></div>
+      <button class="link-btn" id="toggleAll">Chọn tất cả / Bỏ chọn tất cả</button>
+    </div>
+
+    <div class="panel">
+      <h3>Số câu hỏi</h3>
+      <div class="chips" id="countChips">
+        <button class="chip" data-count="10">10 câu</button>
+        <button class="chip active" data-count="15">15 câu</button>
+        <button class="chip" data-count="25">25 câu</button>
+        <button class="chip" data-count="0">Tất cả</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btnStart">Bắt đầu 🚀</button>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section class="screen" id="screen-game">
+    <div class="hud">
+      <button class="icon-btn back-btn" id="btnBack" title="Quay lại trang chủ">←</button>
+      <div class="hud-item"><span class="hud-label">Câu</span><span id="hudCount">1/15</span></div>
+      <div class="hud-item"><span class="hud-label">Điểm</span><span id="hudScore">0</span></div>
+      <div class="hud-item"><span class="hud-label">Chuỗi</span><span id="hudStreak">0</span></div>
+      <button class="icon-btn" id="btnSound" title="Bật/tắt âm thanh">🔊</button>
+    </div>
+
+    <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="timerbar"><div class="timer-fill" id="timerFill"></div></div>
+
+    <div class="qcard" id="qcard">
+      <div class="qlabel" id="qLabel">Chọn nghĩa đúng</div>
+      <div class="qtext" id="qText">—</div>
+      <div class="qtopic" id="qTopic">—</div>
+    </div>
+
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback"></div>
+  </section>
+
+  <!-- ============ END ============ -->
+  <section class="screen" id="screen-end">
+    <div class="trophy" id="endEmoji">🏆</div>
+    <h2 class="end-title" id="endTitle">Hoàn thành!</h2>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="endScore">0</div><div class="l">Điểm</div></div>
+      <div class="stat"><div class="v" id="endAcc">0%</div><div class="l">Chính xác</div></div>
+      <div class="stat"><div class="v" id="endStreak">0</div><div class="l">Chuỗi tốt nhất</div></div>
+    </div>
+
+    <div class="review" id="review"></div>
+
+    <div class="row">
+      <button class="btn-primary" id="btnAgain">Chơi lại 🔁</button>
+      <button class="btn-ghost" id="btnHome">🏠 Trang chủ</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ MODAL XÁC NHẬN ============ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <h3>Thoát ván chơi?</h3>
+    <p>Tiến trình hiện tại sẽ không được lưu. Bạn có chắc muốn quay lại trang chủ không?</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">Ở lại</button>
+      <button class="btn-confirm" id="modalConfirm">Thoát</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================== DỮ LIỆU TỪ VỰNG ==================== */
+/* theme: "city" hoặc "countryside" */
+const VOCAB = [
+  /* ============ CITY: 1. Education & employment ============ */
+  {en:"educational opportunities", vi:"cơ hội giáo dục", t:"edu", theme:"city", ex:"Hanoi offers numerous educational opportunities."},
+  {en:"employment opportunities", vi:"cơ hội việc làm", t:"edu", theme:"city", ex:"Big cities provide more employment opportunities."},
+  {en:"reputable universities", vi:"các trường đại học uy tín", t:"edu", theme:"city", ex:"Hanoi is home to several reputable universities."},
+  {en:"large companies", vi:"các công ty lớn", t:"edu", theme:"city", ex:"Many large companies are based in Hanoi."},
+  {en:"a wide range of career options", vi:"nhiều lựa chọn nghề nghiệp", t:"edu", theme:"city", ex:"Young people have a wide range of career options."},
+  {en:"well-paid jobs", vi:"những công việc có mức lương cao", t:"edu", theme:"city", ex:"Graduates may find well-paid jobs in big cities."},
+  {en:"acquire knowledge and skills", vi:"tiếp thu kiến thức và kỹ năng", t:"edu", theme:"city", ex:"Students can acquire useful knowledge and skills."},
+  {en:"improve living standards", vi:"cải thiện mức sống", t:"edu", theme:"city", ex:"A stable job can help people improve their living standards."},
+  {en:"career development", vi:"sự phát triển nghề nghiệp", t:"edu", theme:"city", ex:"Cities offer more opportunities for career development."},
+  {en:"earn a decent salary", vi:"kiếm được mức lương khá", t:"edu", theme:"city", ex:"Many people move to cities to earn a decent salary."},
+
+  /* ============ CITY: 2. Food and cuisine ============ */
+  {en:"a rich and diverse cuisine", vi:"nền ẩm thực phong phú và đa dạng", t:"food", theme:"city", ex:"Hanoi has a rich and diverse cuisine."},
+  {en:"traditional dishes", vi:"các món ăn truyền thống", t:"food", theme:"city", ex:"Pho and Bun Cha are popular traditional dishes."},
+  {en:"local specialities", vi:"đặc sản địa phương", t:"food", theme:"city", ex:"The city is famous for its local specialities."},
+  {en:"a wide variety of food", vi:"nhiều loại thức ăn đa dạng", t:"food", theme:"city", ex:"Residents can enjoy a wide variety of food."},
+  {en:"delicious and affordable food", vi:"đồ ăn ngon và giá cả phải chăng", t:"food", theme:"city", ex:"Delicious and affordable food is available in many local restaurants."},
+  {en:"cater to different tastes", vi:"đáp ứng nhiều khẩu vị khác nhau", t:"food", theme:"city", ex:"Local restaurants cater to different tastes."},
+  {en:"street food", vi:"đồ ăn đường phố", t:"food", theme:"city", ex:"Hanoi is well known for its street food."},
+  {en:"preserve culinary traditions", vi:"gìn giữ truyền thống ẩm thực", t:"food", theme:"city", ex:"Local restaurants help preserve culinary traditions."},
+
+  /* ============ CITY: 3. Tourist attractions and culture ============ */
+  {en:"a popular tourist attraction", vi:"một địa điểm du lịch nổi tiếng", t:"culture", theme:"city", ex:"Hoan Kiem Lake is a popular tourist attraction."},
+  {en:"a peaceful place to relax", vi:"nơi yên bình để thư giãn", t:"culture", theme:"city", ex:"Hoan Kiem Lake is a peaceful place to relax."},
+  {en:"attract domestic and international visitors", vi:"thu hút du khách trong nước và quốc tế", t:"culture", theme:"city", ex:"The Temple of Literature attracts domestic and international visitors."},
+  {en:"historical and cultural significance", vi:"ý nghĩa lịch sử và văn hóa", t:"culture", theme:"city", ex:"The Temple of Literature has great historical and cultural significance."},
+  {en:"preserve the country's heritage", vi:"gìn giữ di sản đất nước", t:"culture", theme:"city", ex:"We should preserve the country's heritage."},
+  {en:"learn about Vietnamese history", vi:"tìm hiểu lịch sử Việt Nam", t:"culture", theme:"city", ex:"Visitors can learn about Vietnamese history here."},
+  {en:"an important historical site", vi:"một địa điểm lịch sử quan trọng", t:"culture", theme:"city", ex:"Ba Dinh Square is an important historical site."},
+  {en:"national history", vi:"lịch sử dân tộc", t:"culture", theme:"city", ex:"Ba Dinh Square is closely linked to Vietnam's national history."},
+  {en:"cultural heritage", vi:"di sản văn hóa", t:"culture", theme:"city", ex:"Ba Dinh Square is part of our cultural heritage."},
+  {en:"tourist attractions", vi:"các điểm thu hút khách du lịch", t:"culture", theme:"city", ex:"Hanoi has many famous tourist attractions."},
+  {en:"historical landmarks", vi:"các địa danh lịch sử", t:"culture", theme:"city", ex:"The city is full of historical landmarks."},
+  {en:"cultural diversity", vi:"sự đa dạng văn hóa", t:"culture", theme:"city", ex:"Hanoi is known for its cultural diversity."},
+  {en:"a vibrant cultural environment", vi:"môi trường văn hóa sôi động", t:"culture", theme:"city", ex:"The city offers a vibrant cultural environment."},
+  {en:"rich cultural heritage", vi:"di sản văn hóa phong phú", t:"culture", theme:"city", ex:"Vietnam has a rich cultural heritage."},
+  {en:"attract a large number of visitors", vi:"thu hút đông đảo du khách", t:"culture", theme:"city", ex:"The festival attracts a large number of visitors."},
+  {en:"offer entertainment options", vi:"cung cấp các lựa chọn giải trí", t:"culture", theme:"city", ex:"Big cities offer many entertainment options."},
+
+  /* ============ CITY: 4. Facilities and convenience ============ */
+  {en:"modern facilities", vi:"cơ sở vật chất hiện đại", t:"facil", theme:"city", ex:"Hanoi has a wide range of modern facilities."},
+  {en:"shopping malls", vi:"trung tâm thương mại", t:"facil", theme:"city", ex:"Shopping malls provide convenient shopping experiences."},
+  {en:"recreational facilities", vi:"cơ sở vật chất phục vụ giải trí", t:"facil", theme:"city", ex:"The city offers various recreational facilities."},
+  {en:"public services", vi:"dịch vụ công cộng", t:"facil", theme:"city", ex:"Residents have access to various public services."},
+  {en:"convenient access to", vi:"dễ dàng tiếp cận", t:"facil", theme:"city", ex:"People have convenient access to hospitals and schools."},
+  {en:"a wide range of amenities", vi:"nhiều tiện ích đa dạng", t:"facil", theme:"city", ex:"The area provides a wide range of amenities."},
+  {en:"public transport", vi:"phương tiện giao thông công cộng", t:"facil", theme:"city", ex:"Better public transport can make commuting easier."},
+  {en:"a convenient lifestyle", vi:"lối sống thuận tiện", t:"facil", theme:"city", ex:"City life offers a convenient lifestyle."},
+
+  /* ============ CITY: 5. Disadvantages of city life ============ */
+  {en:"traffic congestion", vi:"tắc nghẽn giao thông", t:"disad", theme:"city", ex:"Traffic congestion is a serious problem in Hanoi."},
+  {en:"air pollution", vi:"ô nhiễm không khí", t:"disad", theme:"city", ex:"Heavy traffic contributes to air pollution."},
+  {en:"high living costs", vi:"chi phí sinh hoạt cao", t:"disad", theme:"city", ex:"High living costs put pressure on low-income families."},
+  {en:"rush-hour traffic", vi:"giao thông giờ cao điểm", t:"disad", theme:"city", ex:"Rush-hour traffic makes commuting stressful."},
+  {en:"long commuting times", vi:"thời gian đi lại dài", t:"disad", theme:"city", ex:"Many workers have to deal with long commuting times."},
+  {en:"a high cost of living", vi:"chi phí sinh hoạt đắt đỏ", t:"disad", theme:"city", ex:"The high cost of living can be a financial burden."},
+  {en:"overcrowded streets", vi:"đường phố đông đúc, quá tải", t:"disad", theme:"city", ex:"Overcrowded streets are common in large cities."},
+  {en:"put pressure on", vi:"gây áp lực lên", t:"disad", theme:"city", ex:"High rents put pressure on people's budgets."},
+  {en:"pose a threat to", vi:"gây ra mối đe dọa đối với", t:"disad", theme:"city", ex:"Air pollution poses a threat to public health."},
+  {en:"a stressful living environment", vi:"môi trường sống căng thẳng", t:"disad", theme:"city", ex:"Noise and traffic can create a stressful living environment."},
+
+  /* ============ COUNTRYSIDE: 1. Natural scenery ============ */
+  {en:"picturesque landscapes", vi:"phong cảnh đẹp như tranh", t:"scenery", theme:"countryside", ex:"The village is surrounded by picturesque landscapes."},
+  {en:"lush green fields", vi:"cánh đồng xanh mướt", t:"scenery", theme:"countryside", ex:"We cycled past lush green fields."},
+  {en:"rolling hills", vi:"những ngọn đồi nhấp nhô", t:"scenery", theme:"countryside", ex:"The area is famous for its rolling hills."},
+  {en:"tranquil rivers", vi:"những dòng sông yên tĩnh", t:"scenery", theme:"countryside", ex:"Tranquil rivers flow through the valley."},
+  {en:"breathtaking scenery", vi:"phong cảnh ngoạn mục", t:"scenery", theme:"countryside", ex:"The mountain pass offers breathtaking scenery."},
+  {en:"open fields", vi:"cánh đồng rộng mở", t:"scenery", theme:"countryside", ex:"Children love playing in the open fields."},
+  {en:"scenic beauty", vi:"vẻ đẹp thiên nhiên", t:"scenery", theme:"countryside", ex:"Tourists come here for the scenic beauty."},
+  {en:"natural surroundings", vi:"môi trường tự nhiên xung quanh", t:"scenery", theme:"countryside", ex:"Living in natural surroundings is refreshing."},
+
+  /* ============ COUNTRYSIDE: 2. Rural life & community ============ */
+  {en:"close-knit community", vi:"cộng đồng gắn bó", t:"rural", theme:"countryside", ex:"People here live in a close-knit community."},
+  {en:"friendly local people", vi:"người dân địa phương thân thiện", t:"rural", theme:"countryside", ex:"Visitors are welcomed by friendly local people."},
+  {en:"sense of community", vi:"tinh thần cộng đồng", t:"rural", theme:"countryside", ex:"Festivals create a strong sense of community."},
+  {en:"traditional village life", vi:"cuộc sống làng quê truyền thống", t:"rural", theme:"countryside", ex:"Tourists want to experience traditional village life."},
+  {en:"peaceful atmosphere", vi:"không khí yên bình", t:"rural", theme:"countryside", ex:"The peaceful atmosphere helps people relax."},
+  {en:"slow-paced life", vi:"cuộc sống nhịp độ chậm", t:"rural", theme:"countryside", ex:"Many people prefer the slow-paced life in the countryside."},
+  {en:"local festivals", vi:"lễ hội địa phương", t:"rural", theme:"countryside", ex:"Local festivals are held every spring."},
+  {en:"neighbourly spirit", vi:"tinh thần hàng xóm", t:"rural", theme:"countryside", ex:"The neighbourly spirit is strong in small villages."},
+
+  /* ============ COUNTRYSIDE: 3. Agriculture & farming ============ */
+  {en:"rice paddies", vi:"ruộng lúa", t:"farm", theme:"countryside", ex:"Farmers work hard in the rice paddies."},
+  {en:"farming communities", vi:"cộng đồng nông dân", t:"farm", theme:"countryside", ex:"Farming communities depend on the weather."},
+  {en:"grow crops", vi:"trồng hoa màu", t:"farm", theme:"countryside", ex:"Local farmers grow crops such as rice and corn."},
+  {en:"raise livestock", vi:"chăn nuôi gia súc", t:"farm", theme:"countryside", ex:"Many families raise livestock for a living."},
+  {en:"harvest season", vi:"mùa thu hoạch", t:"farm", theme:"countryside", ex:"The harvest season is the busiest time of year."},
+  {en:"fertile land", vi:"đất đai màu mỡ", t:"farm", theme:"countryside", ex:"The region has very fertile land."},
+  {en:"organic farming", vi:"canh tác hữu cơ", t:"farm", theme:"countryside", ex:"Organic farming is becoming more popular."},
+  {en:"agricultural products", vi:"nông sản", t:"farm", theme:"countryside", ex:"The village sells fresh agricultural products."},
+
+  /* ============ COUNTRYSIDE: 4. Advantages of countryside ============ */
+  {en:"fresh air", vi:"không khí trong lành", t:"adv", theme:"countryside", ex:"People move here to enjoy the fresh air."},
+  {en:"low cost of living", vi:"chi phí sinh hoạt thấp", t:"adv", theme:"countryside", ex:"The low cost of living attracts many families."},
+  {en:"peaceful environment", vi:"môi trường yên bình", t:"adv", theme:"countryside", ex:"Children grow up in a peaceful environment."},
+  {en:"less traffic", vi:"ít xe cộ", t:"adv", theme:"countryside", ex:"There is much less traffic than in the city."},
+  {en:"closer to nature", vi:"gần gũi với thiên nhiên", t:"adv", theme:"countryside", ex:"Living closer to nature reduces stress."},
+  {en:"tight-knit relationships", vi:"mối quan hệ khăng khít", t:"adv", theme:"countryside", ex:"People enjoy tight-knit relationships here."},
+  {en:"affordable housing", vi:"nhà ở giá phải chăng", t:"adv", theme:"countryside", ex:"Affordable housing is a big advantage."},
+  {en:"stress-free lifestyle", vi:"lối sống không căng thẳng", t:"adv", theme:"countryside", ex:"Many retirees prefer a stress-free lifestyle."},
+
+  /* ============ COUNTRYSIDE: 5. Disadvantages of countryside ============ */
+  {en:"limited job opportunities", vi:"ít cơ hội việc làm", t:"disad_c", theme:"countryside", ex:"Young people leave because of limited job opportunities."},
+  {en:"lack of public transport", vi:"thiếu phương tiện giao thông công cộng", t:"disad_c", theme:"countryside", ex:"The lack of public transport is a problem."},
+  {en:"few entertainment options", vi:"ít lựa chọn giải trí", t:"disad_c", theme:"countryside", ex:"There are few entertainment options at night."},
+  {en:"limited access to healthcare", vi:"hạn chế tiếp cận y tế", t:"disad_c", theme:"countryside", ex:"Residents have limited access to healthcare."},
+  {en:"poor infrastructure", vi:"cơ sở hạ tầng kém", t:"disad_c", theme:"countryside", ex:"Poor infrastructure makes travel difficult."},
+  {en:"limited educational facilities", vi:"cơ sở giáo dục hạn chế", t:"disad_c", theme:"countryside", ex:"There are limited educational facilities in remote areas."},
+  {en:"slow internet connection", vi:"kết nối internet chậm", t:"disad_c", theme:"countryside", ex:"A slow internet connection makes remote work hard."},
+  {en:"fewer career prospects", vi:"ít triển vọng nghề nghiệp", t:"disad_c", theme:"countryside", ex:"Graduates often move away due to fewer career prospects."}
+];
+
+/* ==================== ĐỊNH NGHĨA THEME & TOPIC ==================== */
+const THEMES = {
+  city: {
+    id:"city", name:"Thành phố", icon:"🏙️",
+    topics: [
+      {id:"edu",     name:"Giáo dục & Việc làm",    icon:"🎓"},
+      {id:"food",    name:"Ẩm thực",                icon:"🍜"},
+      {id:"culture", name:"Du lịch & Văn hóa",      icon:"🏛️"},
+      {id:"facil",   name:"Cơ sở vật chất",         icon:"🏙️"},
+      {id:"disad",   name:"Nhược điểm thành phố",   icon:"🚦"}
+    ]
+  },
+  countryside: {
+    id:"countryside", name:"Nông thôn", icon:"🌾",
+    topics: [
+      {id:"scenery",  name:"Phong cảnh thiên nhiên",   icon:"🏞️"},
+      {id:"rural",    name:"Cuộc sống nông thôn",      icon:"🏘️"},
+      {id:"farm",     name:"Nông nghiệp",              icon:"🚜"},
+      {id:"adv",      name:"Ưu điểm nông thôn",        icon:"🌱"},
+      {id:"disad_c",  name:"Nhược điểm nông thôn",     icon:"🚧"}
+    ]
+  }
+};
+
+/* Helper: lấy danh sách topic đang hiển thị theo theme */
+function getVisibleTopics(){
+  if(state.theme === "all"){
+    return [...THEMES.city.topics, ...THEMES.countryside.topics];
+  }
+  return THEMES[state.theme].topics;
+}
+
+/* Helper: tìm theme từ topic id */
+function getThemeOfTopic(topicId){
+  for(const tk in THEMES){
+    if(THEMES[tk].topics.some(t => t.id === topicId)) return tk;
+  }
+  return null;
+}
+
+/* ==================== TIỆN ÍCH ==================== */
+const $ = s => document.querySelector(s);
+const shuffle = a => { a = [...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+let audioCtx = null, muted = false;
+function beep(freq, dur, type="sine", vol=.07){
+  if(muted) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + dur);
+    o.stop(audioCtx.currentTime + dur);
+  }catch(e){}
+}
+const sndOk = () => { beep(660,.10,"sine",.07); setTimeout(()=>beep(990,.16,"sine",.07),90); };
+const sndNo = () => { beep(200,.22,"sawtooth",.05); };
+
+/* ==================== STATE ==================== */
+const QUESTION_TIME = 25;
+const state = {
+  theme: "all",
+  direction: "mix",
+  count: 15,
+  topics: new Set(),
+  queue: [],
+  index: 0,
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  correctCount: 0,
+  answered: false,
+  mistakes: [],
+  timer: null,
+  timeLeft: QUESTION_TIME
+};
+
+/* ==================== RENDER TOPIC CHIPS ==================== */
+function renderTopicChips(){
+  const el = $("#topicChips");
+  el.innerHTML = "";
+  const topics = getVisibleTopics();
+  topics.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.dataset.topic = t.id;
+    b.textContent = `${t.icon} ${t.name}`;
+    if(state.topics.has(t.id)) b.classList.add("active");
+    b.onclick = () => {
+      b.classList.toggle("active");
+      if(b.classList.contains("active")) state.topics.add(t.id);
+      else state.topics.delete(t.id);
+    };
+    el.appendChild(b);
+  });
+}
+
+/* Cập nhật lại state.topics khi đổi theme */
+function applyTheme(theme){
+  state.theme = theme;
+  state.topics.clear();
+  getVisibleTopics().forEach(t => state.topics.add(t.id));
+  renderTopicChips();
+}
+
+/* ==================== KHỞI TẠO MÀN HÌNH START ==================== */
+applyTheme("all");
+
+/* Theme chips */
+$("#themeChips").addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if(!btn) return;
+  [...$("#themeChips").children].forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  applyTheme(btn.dataset.theme);
+});
+
+/* Toggle tất cả các topic đang hiển thị */
+$("#toggleAll").onclick = () => {
+  const chips = [...$("#topicChips").children];
+  const allOn = chips.every(c => c.classList.contains("active"));
+  chips.forEach(c => {
+    c.classList.toggle("active", !allOn);
+    if(!allOn) state.topics.add(c.dataset.topic);
+    else state.topics.delete(c.dataset.topic);
+  });
+};
+
+function bindChipGroup(sel, cb){
+  const el = $(sel);
+  el.addEventListener("click", e => {
+    const btn = e.target.closest(".chip");
+    if(!btn) return;
+    [...el.children].forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    cb(btn.dataset);
+  });
+}
+bindChipGroup("#dirChips", d => state.direction = d.dir);
+bindChipGroup("#countChips", d => state.count = parseInt(d.count));
+
+/* ==================== ĐIỀU KHIỂN MÀN HÌNH ==================== */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $("#screen-" + id).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ==================== QUAY LẠI TRANG CHỦ ==================== */
+function goHome(){
+  stopTimer();
+  state.queue = [];
+  state.answered = false;
+  $("#feedback").innerHTML = "";
+  $("#answers").innerHTML = "";
+  hideConfirm();
+  showScreen("start");
+}
+
+let confirmCallback = null;
+function showConfirm(cb){
+  confirmCallback = cb;
+  $("#confirmModal").classList.add("show");
+}
+function hideConfirm(){
+  $("#confirmModal").classList.remove("show");
+  confirmCallback = null;
+}
+
+$("#modalCancel").onclick = hideConfirm;
+$("#modalConfirm").onclick = () => {
+  const cb = confirmCallback;
+  hideConfirm();
+  if(cb) cb();
+};
+$("#confirmModal").addEventListener("click", e => {
+  if(e.target.id === "confirmModal") hideConfirm();
+});
+
+$("#btnBack").onclick = () => {
+  const played = state.index > 0 || state.answered;
+  if(played) showConfirm(() => goHome());
+  else goHome();
+};
+$("#btnHome").onclick = () => goHome();
+
+/* ==================== BẮT ĐẦU GAME ==================== */
+$("#btnStart").onclick = startGame;
+$("#btnAgain").onclick = startGame;
+
+function startGame(){
+  const pool = VOCAB.filter(v => state.topics.has(v.t));
+  if(pool.length < 4){
+    alert("Vui lòng chọn ít nhất 4 từ vựng (một chủ đề) để chơi!");
+    return;
+  }
+  const n = state.count === 0 ? pool.length : Math.min(state.count, pool.length);
+
+  state.queue = shuffle(pool).slice(0, n).map(item => ({
+    item,
+    dir: state.direction === "mix" ? (Math.random() < .5 ? "en2vi" : "vi2en") : state.direction
+  }));
+
+  state.index = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.correctCount = 0;
+  state.mistakes = [];
+
+  $("#hudScore").textContent = "0";
+  $("#hudStreak").textContent = "0";
+
+  showScreen("game");
+  renderQuestion();
+}
+
+/* ==================== HIỂN THỊ CÂU HỎI ==================== */
+function renderQuestion(){
+  stopTimer();
+  state.answered = false;
+  $("#feedback").innerHTML = "";
+
+  const q = state.queue[state.index];
+  const isEn2Vi = q.dir === "en2vi";
+  const key = isEn2Vi ? "vi" : "en";
+  const promptText = isEn2Vi ? q.item.en : q.item.vi;
+  const correctText = isEn2Vi ? q.item.vi : q.item.en;
+
+  $("#qLabel").textContent = isEn2Vi
+    ? "Từ / cụm từ này có nghĩa là gì?"
+    : "Cụm từ tiếng Việt này trong tiếng Anh là gì?";
+  $("#qText").textContent = promptText;
+
+  /* Đổi màu qcard theo theme */
+  const qcard = $("#qcard");
+  qcard.classList.toggle("theme-countryside", q.item.theme === "countryside");
+
+  /* Tìm topic & theme để hiển thị */
+  const themeInfo = THEMES[q.item.theme];
+  const topicInfo = themeInfo.topics.find(t => t.id === q.item.t);
+  $("#qTopic").textContent = `${themeInfo.icon} ${themeInfo.name} · ${topicInfo.icon} ${topicInfo.name}`;
+
+  $("#hudCount").textContent = `${state.index + 1}/${state.queue.length}`;
+  $("#hudScore").textContent = state.score;
+  $("#hudStreak").textContent = state.streak >= 3 ? `🔥 ${state.streak}` : state.streak;
+  $("#progressFill").style.width = `${(state.index / state.queue.length) * 100}%`;
+
+  /* --- Tạo đáp án nhiễu: ưu tiên cùng topic, rồi cùng theme, rồi khác --- */
+  const sameTopic = VOCAB.filter(v => v.t === q.item.t && v[key] !== correctText);
+  const sameTheme = VOCAB.filter(v => v.theme === q.item.theme && v.t !== q.item.t && v[key] !== correctText);
+  const otherAll  = VOCAB.filter(v => v.theme !== q.item.theme && v[key] !== correctText);
+
+  let candidates = shuffle(sameTopic);
+  if(candidates.length < 3) candidates = candidates.concat(shuffle(sameTheme));
+  if(candidates.length < 3) candidates = candidates.concat(shuffle(otherAll));
+
+  const seen = new Set([correctText]);
+  const distractors = [];
+  for(const v of candidates){
+    if(!seen.has(v[key])){ seen.add(v[key]); distractors.push(v[key]); }
+    if(distractors.length === 3) break;
+  }
+
+  const options = shuffle([correctText, ...distractors]);
+  const letters = ["A","B","C","D"];
+
+  const wrap = $("#answers");
+  wrap.innerHTML = "";
+  options.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.className = "answer";
+    b.dataset.text = text;
+    b.innerHTML = `<span class="key">${letters[i]}</span><span class="atext"></span>`;
+    b.querySelector(".atext").textContent = text;
+    b.onclick = () => chooseAnswer(b, text);
+    wrap.appendChild(b);
+  });
+
+  startTimer();
+}
+
+/* ==================== ĐỒNG HỒ ==================== */
+function startTimer(){
+  state.timeLeft = QUESTION_TIME;
+  updateTimerBar();
+  state.timer = setInterval(() => {
+    state.timeLeft -= 0.1;
+    if(state.timeLeft <= 0){
+      state.timeLeft = 0;
+      updateTimerBar();
+      stopTimer();
+      timeUp();
+    } else {
+      updateTimerBar();
+    }
+  }, 100);
+}
+function stopTimer(){
+  if(state.timer){ clearInterval(state.timer); state.timer = null; }
+}
+function updateTimerBar(){
+  const pct = (state.timeLeft / QUESTION_TIME) * 100;
+  const bar = $("#timerFill");
+  bar.style.width = pct + "%";
+  bar.classList.toggle("low", pct < 32);
+}
+
+/* ==================== TRẢ LỜI ==================== */
+function chooseAnswer(btn, text){
+  if(state.answered) return;
+  state.answered = true;
+  stopTimer();
+
+  const q = state.queue[state.index];
+  const isEn2Vi = q.dir === "en2vi";
+  const correctText = isEn2Vi ? q.item.vi : q.item.en;
+  const isCorrect = text === correctText;
+
+  const buttons = [...document.querySelectorAll(".answer")];
+  buttons.forEach(b => {
+    b.disabled = true;
+    if(b.dataset.text === correctText) b.classList.add("correct");
+    else b.classList.add("dim");
+  });
+  if(!isCorrect){ btn.classList.remove("dim"); btn.classList.add("wrong"); }
+  else btn.classList.remove("dim");
+
+  let gained = 0;
+  if(isCorrect){
+    state.correctCount++;
+    state.streak++;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    const timeBonus = Math.round(state.timeLeft / 5);
+    const streakBonus = Math.min(state.streak, 5) * 2;
+    gained = 10 + timeBonus + streakBonus;
+    state.score += gained;
+    sndOk();
+  } else {
+    state.streak = 0;
+    state.mistakes.push(q.item);
+    sndNo();
+  }
+
+  $("#hudScore").textContent = state.score;
+  $("#hudStreak").textContent = state.streak >= 3 ? `🔥 ${state.streak}` : state.streak;
+  $("#progressFill").style.width = `${((state.index + 1) / state.queue.length) * 100}%`;
+
+  showFeedback(isCorrect, gained, q.item);
+}
+
+function timeUp(){
+  if(state.answered) return;
+  state.answered = true;
+
+  const q = state.queue[state.index];
+  const isEn2Vi = q.dir === "en2vi";
+  const correctText = isEn2Vi ? q.item.vi : q.item.en;
+
+  [...document.querySelectorAll(".answer")].forEach(b => {
+    b.disabled = true;
+    if(b.dataset.text === correctText) b.classList.add("correct");
+    else b.classList.add("dim");
+  });
+
+  state.streak = 0;
+  state.mistakes.push(q.item);
+  $("#hudStreak").textContent = "0";
+  $("#progressFill").style.width = `${((state.index + 1) / state.queue.length) * 100}%`;
+  sndNo();
+
+  showFeedback(false, 0, q.item, true);
+}
+
+function showFeedback(isCorrect, gained, item, timedOut){
+  const fb = $("#feedback");
+  const title = isCorrect
+    ? `✅ Chính xác! <span class="pts">+${gained} điểm</span>`
+    : (timedOut ? `⏰ Hết giờ!` : `❌ Chưa đúng!`);
+
+  const themeIcon = THEMES[item.theme].icon;
+
+  fb.innerHTML = `
+    <div class="fb-inner">
+      <div class="fb-title ${isCorrect ? "ok" : "no"}">${title}</div>
+      <div class="fb-answer">${themeIcon} <b>${item.en}</b> = ${item.vi}</div>
+      ${item.ex ? `<div class="fb-ex">“${item.ex}”</div>` : ""}
+      <button class="btn-next" id="btnNext">Tiếp tục →</button>
+    </div>
+  `;
+  $("#btnNext").onclick = nextQuestion;
+  $("#btnNext").focus({preventScroll:true});
+}
+
+/* ==================== CÂU TIẾP ==================== */
+function nextQuestion(){
+  if(!state.answered) return;
+  state.index++;
+  if(state.index >= state.queue.length) endGame();
+  else renderQuestion();
+}
+
+/* ==================== KẾT THÚC ==================== */
+function endGame(){
+  stopTimer();
+  const total = state.queue.length;
+  const acc = Math.round((state.correctCount / total) * 100);
+
+  $("#endScore").textContent = state.score;
+  $("#endAcc").textContent = acc + "%";
+  $("#endStreak").textContent = state.bestStreak;
+
+  let emoji = "📚", title = "Cố gắng thêm nhé!";
+  if(acc >= 90){ emoji = "🏆"; title = "Xuất sắc! Bạn là cao thủ từ vựng!"; }
+  else if(acc >= 70){ emoji = "🌟"; title = "Làm tốt lắm! Tiếp tục phát huy!"; }
+  else if(acc >= 50){ emoji = "💪"; title = "Khá ổn! Luyện thêm một chút nữa nhé!"; }
+
+  $("#endEmoji").textContent = emoji;
+  $("#endTitle").textContent = title;
+
+  const review = $("#review");
+  if(state.mistakes.length === 0){
+    review.innerHTML = `<h4>🎉 Không có từ nào sai</h4>
+      <div class="review-item">Bạn đã trả lời đúng tất cả các câu. Tuyệt vời!</div>`;
+  } else {
+    const uniq = [];
+    const seen = new Set();
+    state.mistakes.forEach(m => { if(!seen.has(m.en)){ seen.add(m.en); uniq.push(m); } });
+    review.innerHTML = `<h4>📝 Ôn lại ${uniq.length} từ cần nhớ</h4>` +
+      uniq.map(m => `
+        <div class="review-item">
+          <div class="en">${THEMES[m.theme].icon} ${m.en}</div>
+          <div class="vi">→ ${m.vi}</div>
+        </div>`).join("");
+  }
+
+  showScreen("end");
+  beep(523,.12,"sine",.07);
+  setTimeout(()=>beep(659,.12,"sine",.07),120);
+  setTimeout(()=>beep(784,.22,"sine",.07),240);
+}
+
+/* ==================== ÂM THANH ==================== */
+$("#btnSound").onclick = () => {
+  muted = !muted;
+  $("#btnSound").textContent = muted ? "🔇" : "🔊";
+};
+
+/* ==================== BÀN PHÍM ==================== */
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && $("#confirmModal").classList.contains("show")){
+    hideConfirm();
+    return;
+  }
+  if(!$("#screen-game").classList.contains("active")) return;
+
+  if(state.answered && (e.key === "Enter" || e.key === " ")){
+    e.preventDefault();
+    nextQuestion();
+    return;
+  }
+  const n = parseInt(e.key, 10);
+  if(!state.answered && n >= 1 && n <= 4){
+    const btn = document.querySelectorAll(".answer")[n - 1];
+    if(btn) btn.click();
+  }
+});
+</script>
+</body>
+</html>
